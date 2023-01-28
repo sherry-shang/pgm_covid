@@ -20,6 +20,7 @@ G = pd.read_pickle("sev_cov_nx.pickle")
 nodes = list(G)
 nodes.remove(severity)
 nodes.sort()
+nodes.append('severity')
 #nodes.remove('Number of comorbidities: ')
 #nodes.remove('Post-partum (childbirth in the last year)?')
 
@@ -42,6 +43,10 @@ layout = html.Div([
               ])
 def update_figure(node11,node22):
     csv = pandas.read_csv("sev_ided(1).csv")
+    if node11 == 'severity':
+        node11 = severity
+    if node22 == 'severity':
+        node22 == severity
     first_node_col = list(set(csv[node11].tolist()))
     second_node_col = list(set(csv[node22].tolist()))
     first_node_col = [item for item in first_node_col if not (math.isnan(item)) == True]
@@ -54,6 +59,32 @@ def update_figure(node11,node22):
         second_node_col.remove(-999)
     lst1 = csv[node11].tolist()
     lst2 = csv[node22].tolist()
+    if node11 == severity:
+        var2_lst = []
+        if 4 in first_node_col:
+            var2_lst.append(4)
+        if 3 in first_node_col:
+            var2_lst.append(3)
+        if 0 in first_node_col:
+            var2_lst.append(0)
+        if 1 in first_node_col:
+            var2_lst.append(1)
+        if 2 in first_node_col:
+            var2_lst.append(2)
+        first_node_col = var2_lst
+    if node22 == severity:
+        var2_lst = []
+        if 4 in second_node_col:
+            var2_lst.append(4)
+        if 3 in second_node_col:
+            var2_lst.append(3)
+        if 0 in second_node_col:
+            var2_lst.append(0)
+        if 1 in second_node_col:
+            var2_lst.append(1)
+        if 2 in second_node_col:
+            var2_lst.append(2)
+        second_node_col = var2_lst
     total_num = 0
     for i in range(len(lst1)):
         if lst1[i] != -999 and lst2[i] != -999:
