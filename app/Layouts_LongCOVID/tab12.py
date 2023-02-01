@@ -141,7 +141,7 @@ def update_figure(node11,node22):
             csv1 = csv[(csv[node11] == num1) & (csv[node22] == num2)]
             lst.append(round(csv1.shape[0]/total_num,2))
         z_value.append(lst)
-    reference = pd.read_pickle("C:\\Users\\shang\\Downloads\\long_discrete_to_real(1).pickle")
+    reference = pd.read_pickle("long_discrete_to_real(1).pickle")
     x_reference_whole = reference[node11]
     y_reference_whole = reference[node22]
     x_reference = []
