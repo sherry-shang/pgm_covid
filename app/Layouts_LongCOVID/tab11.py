@@ -863,7 +863,7 @@ def update_map(dropdown,n_clicks):
         var1 = 'Long Covid'
         var2 = dropdown
         dt = pd.read_csv('cond_prob_long.csv')
-        reference = pd.read_pickle("C:\\Users\\shang\\Downloads\\long_discrete_to_real(1).pickle")
+        reference = pd.read_pickle("long_discrete_to_real(1).pickle")
         var1_lst = list(set(dt[var2].tolist()))
         while -999 in var1_lst:
             var1_lst.remove(-999)

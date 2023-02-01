@@ -19,7 +19,7 @@ var1 = severity
 var2 = 'ALT:'
 g = pd.read_pickle('sev_cov_nx.pickle')
 dt = pd.read_csv('cond_prob_sev.csv')
-reference = pd.read_pickle("C:\\Users\\shang\\Downloads\\sev_discrete_to_real(1).pickle")
+reference = pd.read_pickle("sev_discrete_to_real_new.pickle")
 
 var1_lst = list(set(dt[var2].tolist()))
 while -999 in var1_lst:

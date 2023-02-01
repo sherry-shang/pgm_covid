@@ -26,7 +26,7 @@ def GenerateSubBayesianNetwork( g, source, target ):
     return BayesianNetwork( list( edges ) )
 
 dt = pd.read_csv('cond_prob_sev.csv')
-reference = pd.read_pickle("C:\\Users\\shang\\Downloads\\sev_discrete_to_real(1).pickle")
+#reference = pd.read_pickle("C:\\Users\\shang\\Downloads\\sev_discrete_to_real(1).pickle")
 
 cyto.load_extra_layouts()
 '''

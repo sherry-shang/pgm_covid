@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 with open('long_app_degene.json') as jf:
     degene_json = json.load(jf)
     jf.close()
-reference = pd.read_pickle("C:\\Users\\\shang\\Downloads\\long_discrete_to_real(1).pickle")
-clinical1  = pd.read_csv('C:\\Users\\shang\\PycharmProjects\\draw\\long_cov_out_withid_in_rna.csv')
+reference = pd.read_pickle("long_discrete_to_real(1).pickle")
+#clinical1  = pd.read_csv('C:\\Users\\shang\\PycharmProjects\\draw\\long_cov_out_withid_in_rna.csv')
 degene_lst = []
 for i in degene_json:
     if len(degene_json[i]) == 6 and not degene_json[i][0] == []:
