@@ -14,6 +14,16 @@ from app_whole import app
 import re
 import pandas
 import plotly.graph_objects as go
+import json
+
+with open('sev_app_degene.json') as jf:
+    degene_json = json.load(jf)
+    jf.close()
+
+degene_lst = []
+for i in degene_json:
+    if len(degene_json[i]) == 6 and not degene_json[i][0] == []:
+        degene_lst.append(i)
 
 severity = 'If a screening test for SARS-CoV-2 by PCR was performed, what is the most severe severity level (according to WHO) achieved?'
 G = pd.read_pickle("sev_cov_nx.pickle")
@@ -26,27 +36,51 @@ nodes.append('severity')
 
 node_dropdown1 = dcc.Dropdown(nodes,value='BMI:',id='node1')
 node_dropdown2 = dcc.Dropdown(nodes,value='Weight in kg:',id='node2')
+degene_dropdown = dcc.Dropdown(degene_lst, value= 'BMI:',id='degene_node2')
 
 layout = html.Div([
-        #html.Div([html.H3("Visualize:")], style={'textAlign': "Left"})
+        html.H6('Please select two nodes:', style={'textAlign': "Left"}),
           node_dropdown1
         , node_dropdown2
         ,html.H6(id='my_function1')
      , html.Div([dcc.Graph(id="ru-my-heatmap1"
                             , style={"margin-right": "auto", "margin-left": "auto", "width": "80%", "height":"600px"})]
         ),
+        html.H6('Please select one node:', style={'textAlign': "Left"}),
+     degene_dropdown,
+        html.H6('Here are the genes with the highest fold changes in each group:', style={'textAlign': "Left"}),
+     html.Div([html.ObjectEl(id = 'degene_heatmap1',type='application/pdf',width='1000',height='1000')],style={ 'text-align':'center'})
     ])
+
+@app.callback(Output('degene_heatmap1','data'),
+              [Input('degene_node2','value')
+              ])
+def update_degene(node):
+    var1 = node
+    var2 = severity
+    if '/' in var1:
+        var1 = var1.replace('/', ' or ')
+    # f.savefig('sev_age.png')
+    if '?' in var1:
+        return('assets/' + 'a' + var1.replace('?', '') + '_' + 'Severity' + '.pdf')
+    # f.savefig(var1.replace('?','')+'_'+var2+'.pdf',bbox_inches = 'tight')
+    elif ':' in var1:
+        return('assets/' + 'a' + var1.replace(':', ' ') + '_' + 'Severity' + '.pdf')
+    else:
+        return('assets/' + 'a' + var1 + '_' + 'Severity' + '.pdf')
 
 @app.callback(Output('ru-my-heatmap1','figure'),
               [Input('node1','value'),
                Input('node2','value')
               ])
 def update_figure(node11,node22):
+    label_x = node11
+    label_y = node22
     csv = pandas.read_csv("sev_ided(1).csv")
     if node11 == 'severity':
         node11 = severity
     if node22 == 'severity':
-        node22 == severity
+        node22 = severity
     first_node_col = list(set(csv[node11].tolist()))
     second_node_col = list(set(csv[node22].tolist()))
     first_node_col = [item for item in first_node_col if not (math.isnan(item)) == True]
@@ -85,45 +119,58 @@ def update_figure(node11,node22):
         if 2 in second_node_col:
             var2_lst.append(2)
         second_node_col = var2_lst
+
     total_num = 0
     for i in range(len(lst1)):
         if lst1[i] != -999 and lst2[i] != -999:
             total_num = total_num + 1
     z_value = []
-    for idx, num1 in enumerate(first_node_col):
-        for num2 in second_node_col:
+    for num2 in second_node_col:
+        lst = []
+        for num1 in first_node_col:
             csv1 = csv[(csv[node11] == num1) & (csv[node22] == num2)]
-            z_value.append(round(csv1.shape[0]/total_num,2))
-    node1 = []
-    node2 = []
-    for num1 in first_node_col:
-        int1 = 0
-        while int1 < len(second_node_col):
-            node1.append(num1)
-            int1 += 1
-    int2 = 0
-    while int2 < len(first_node_col):
-        node2 = node2 + second_node_col
-        int2 += 1
+            lst.append(round(csv1.shape[0]/total_num,2))
+        z_value.append(lst)
+    reference = pd.read_pickle('sev_discrete_to_real_new.pickle')
+    x_reference_whole = reference[node11]
+    y_reference_whole = reference[node22]
+    x_reference = []
+    y_reference = []
+    if node11 == severity:
+        x_reference = ['Uninfected','Mild','Moderate','Severe','Dead']
+    else:
+        if first_node_col[0] == 0:
+            x_naming = first_node_col
+        else:
+            x_naming = [i - 1 for i in first_node_col]
+        for i in x_reference_whole:
+            if i in x_naming:
+                x_reference.append(x_reference_whole[i])
 
-    data = {
-        node11: node1,
-        node22: node2,
-        'cases': z_value
-    }
-    string_list1 = list(map(str, first_node_col))
-    string_list2 = list(map(str, second_node_col))
-    df = pandas.DataFrame(data)
-    df = df.pivot(node11, node22, 'cases')
+    if node22 == severity:
+        y_reference = ['Uninfected','Mild','Moderate','Severe','Dead']
+    else:
+        if second_node_col[0] == 0:
+            y_naming = second_node_col
+        else:
+            y_naming = [i - 1 for i in second_node_col]
+        for i in y_reference_whole:
+            if i in y_naming:
+                y_reference.append(y_reference_whole[i])
+    x_reference = list(map(str,x_reference))
+    y_reference = list(map(str,y_reference))
+    '''      
     if len(first_node_col) == 2:
         if len(second_node_col) == 2:
-            fig = px.imshow(df, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, x=['No','Yes'],y=['No','Yes'],aspect="auto")
+            fig = px.imshow(z_value, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, x=['No','Yes'],y=['No','Yes'],aspect="auto")
         else:
-            fig = px.imshow(df, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, y=['No', 'Yes'],x=string_list2,aspect="auto")
+            fig = px.imshow(z_value, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, y=['No', 'Yes'],x=string_list2,aspect="auto")
     elif len(second_node_col) == 2:
-        fig = px.imshow(df, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, x=['No', 'Yes'],y=string_list1,aspect="auto")
+        fig = px.imshow(z_value, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, x=['No', 'Yes'],y=string_list1,aspect="auto")
     else:
-        fig = px.imshow(df, color_continuous_scale=px.colors.sequential.YlOrBr,text_auto=True,aspect="auto",x=string_list2,y=string_list1)
+        fig = px.imshow(z_value, color_continuous_scale=px.colors.sequential.YlOrBr,text_auto=True,aspect="auto",x=string_list2,y=string_list1)
+    '''
+    fig = px.imshow(z_value, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, aspect="auto",x=x_reference, y=y_reference,labels=dict(x = label_x,y = label_y))
     fig.update_layout(title_font={'size': 27}, title_x=0.5)
     fig.update_traces(hoverongaps=False,
                       hovertemplate= node11 + " %{y}"

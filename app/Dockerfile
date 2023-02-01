@@ -12,6 +12,10 @@ RUN pip install plotly
 RUN pip install networkx
 RUN pip install dash_cytoscape
 RUN pip install anndata
+RUN pip install pgmpy
+RUN pip install matplotlib
+RUN pip install seaborn
+
 
 RUN mkdir /home/app/
 COPY . /home/app/

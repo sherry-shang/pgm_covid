@@ -42,7 +42,7 @@ nodes.sort()
 nodes.remove(severity)
 #nodes.append()
 
-multi_dropdown = dcc.Dropdown(nodes, [],multi=True,id='dropdown',optionHeight=60)
+multi_dropdown = dcc.Dropdown(nodes, [],multi=False,id='dropdown',optionHeight=60)
 submit_button = dbc.Button("Submit",className = "btn border border-2 btn-light", n_clicks=0, id="submit-button-state",size="sm")
 #clear_button = dbc.Button("Clear",className = "btn btn-secondary", n_clicks=0, id="clear-button-state")
 inference_type_dorpdown1 = dcc.Dropdown(inference_type,[],id='choose-inference1')
@@ -81,6 +81,7 @@ offcanvas = html.Div(
         multi_dropdown,
         submit_button,
         #dbc.Row([html.Small(id='my_output',className='mt-4')])
+        html.Div(id="map1")
         ],
         style={'border-style': 'dotted','border-radius': '5px'}),
         id="collapse2",
@@ -113,7 +114,7 @@ offcanvas = html.Div(
         id="collapse4",
         is_open=True,
         ),
-        dbc.Container([dbc.Button('Contact Us',id="contact-us",n_clicks=0,className = 'btn btn-light',href='https://meakinsmcgill.com/')],style={'border-style': 'groove hidden hidden hidden','margin-top' : '20px'})
+        dbc.Container([dbc.Button('Contact Us',id="contact-us",n_clicks=0,className = 'btn btn-light',href='https://junding.lab.mcgill.ca/',target="_blank")],style={'border-style': 'groove hidden hidden hidden','margin-top' : '20px'})
         ]),
 
         id="offcanvas",

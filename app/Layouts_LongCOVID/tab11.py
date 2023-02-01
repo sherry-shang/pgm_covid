@@ -12,6 +12,17 @@ import plotly.express as px
 import math
 from app_whole import app
 import re
+from pgmpy.models import BayesianNetwork
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.inference import VariableElimination
+
+def GenerateSubBayesianNetwork( g, source, target ):
+    edges = set()
+    all_paths = nx.all_simple_paths( g, source, target )
+    for path in all_paths:
+        for i in range( len( path ) - 1 ):
+            edges.add( ( path[i], path[i+1] ) )
+    return BayesianNetwork( list( edges ) )
 
 cyto.load_extra_layouts()
 '''
@@ -653,20 +664,6 @@ for x in G.nodes:
                 }
             }
         )
-    elif x == severity:
-        stylesheet1.append(
-            {
-                'selector': '.' + re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node',
-                'style': {
-                    'width' : 5,
-                    'height' : 5,
-                    'background-color': 'blue',
-                    'background-opacity': 0.8,
-                    'border-width': 0.5,
-                    'shape': 'circle'
-                }
-            }
-        )
     elif x == 'Long Covid':
         stylesheet1.append(
             {
@@ -723,7 +720,7 @@ for x in G.nodes:
                 }
             }
         )
-    else:
+    elif x in others:
         stylesheet1.append(
             {
                 'selector': '.' + re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node',
@@ -781,8 +778,6 @@ for x in G.nodes:
         node_elements.append({'data': {'id': x, 'label': 'followup_symptom_list'}, 'selectable': False,'classes' : re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node'})
     elif x in comorbidity_list:
         node_elements.append({'data': {'id': x, 'label': 'comorbidity_list'}, 'selectable': False, 'classes': re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node'})
-    elif x == severity:
-        node_elements.append({'data': {'id': x, 'label': 'severity'}, 'selectable': False, 'classes': re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node'})
     elif x in demographic:
         node_elements.append({'data': {'id': x, 'label': 'demographic'}, 'selectable': False,'classes': re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node'})
     elif x in treatment:
@@ -792,7 +787,7 @@ for x in G.nodes:
     elif x == 'Long Covid':
         node_elements.append({'data': {'id': x, 'label': 'Long Covid'}, 'selectable': False,'classes': re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node'})
 
-    else:
+    elif x in others:
         node_elements.append({'data': {'id': x, 'label': 'others'}, 'selectable': False,'classes': re.sub(r'[^a-zA-Z0-9]', '', x) + 'Node'})
 
 
@@ -855,7 +850,62 @@ graph = cyto.Cytoscape(
             elements= node_elements + edge_elements
             )
 
-layout = html.Div([graph,canvas_button])
+layout = html.Div([canvas_button,graph])
+
+
+@app.callback(Output("map1",'children'),
+              State('dropdown','value'),
+              Input('submit-button-state','n_clicks')
+              )
+def update_map(dropdown,n_clicks):
+    #button_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if n_clicks:
+        var1 = 'Long Covid'
+        var2 = dropdown
+        dt = pd.read_csv('cond_prob_long.csv')
+        reference = pd.read_pickle("C:\\Users\\shang\\Downloads\\long_discrete_to_real(1).pickle")
+        var1_lst = list(set(dt[var2].tolist()))
+        while -999 in var1_lst:
+            var1_lst.remove(-999)
+        var1_lst.sort()
+
+        model = GenerateSubBayesianNetwork(G, var2, var1)
+        nodes = list(model.nodes)
+        cpd_lst = []
+        if nodes == []:
+            return html.Div()
+        for node in nodes:
+            cpd_lst.append(MaximumLikelihoodEstimator(model, dt).estimate_cpd(node))
+        for cpd in cpd_lst:
+            model.add_cpds(cpd)
+
+        infer_non_adjust = VariableElimination(model)
+        if var1_lst[0] == 0:
+            naming = var1_lst
+        else:
+            naming = [i - 1 for i in var1_lst]
+        '''
+        row_lst = []
+        row_lst.append(html.Tr([html.Td(''), html.Td('Severity: 0'), html.Td('Severity: 1'), html.Td('Severity: 2')]))
+        if var1_lst[0] == 0:
+            naming = var1_lst
+        else:
+            naming = [i - 1 for i in var1_lst]
+        for i in range(len(var1_lst)):
+            print(naming)
+            temp_lst = infer_non_adjust.query(variables=[var1], evidence={var2: var1_lst[i]}).values
+            temp_lst = list(map(str, temp_lst))
+            temp = []
+            temp.append(html.Td(var2 + str(reference[var2][naming[i]])))
+            temp.append(html.Td(x for x in temp_lst))
+            row_lst.append(html.Tr(temp))
+        '''
+        dict1 = {}
+        dict1[''] = [var2 + str(reference[var2][naming[i]]) for i in range(len(var1_lst))]
+        dict1['Non Long COVID'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 0}).values]))
+        dict1['Long COVID'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 1}).values]))
+
+        return html.Div([dbc.Table.from_dataframe(pd.DataFrame(dict1))])
 
 stylesheet_copy = copy.deepcopy(stylesheet1)
 stylesheet_hover = copy.deepcopy(stylesheet1)
@@ -881,31 +931,30 @@ def update_stylesheet(n_clicks,n_clicks1,hover,type1,color1,shape1,dropdown):
                         if selector1['selector'] == selector['selector']:
                             selector['style']['background-color'] = selector1['style']['background-color']
                             selector['style']['shape'] = selector1['style']['shape']
-            for value in dropdown:
-                path = shortest_path(graph_path, str(value), 'Long Covid')
-                for idx, node in enumerate(path):
-                    if idx < len(path) - 1:
-                        for edge in edge_elements:
-                            if edge['data']['source'] == node and edge['data']['target'] == path[idx + 1]:
-                                for selector in stylesheet_copy_copy:
-                                    if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', node) + re.sub(r'[^a-zA-Z0-9]','', path[idx + 1]) + 'Edge':
-                                        selector['style']['line-color'] = 'orange'
-                                        selector['style']['target-arrow-color'] = 'orange'
-                                for selector in stylesheet_hover:
-                                    if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', node) + re.sub(r'[^a-zA-Z0-9]','', path[idx + 1]) + 'Edge':
-                                        selector['style']['line-color'] = 'orange'
-                                        selector['style']['target-arrow-color'] = 'orange'
-                    for node1 in node_elements:
-                        if node1['data']['id'] == node:
-                            id = node1['data']['id']
+            path = shortest_path(graph_path, str(dropdown), 'Long Covid')
+            for idx, node in enumerate(path):
+                if idx < len(path) - 1:
+                    for edge in edge_elements:
+                        if edge['data']['source'] == node and edge['data']['target'] == path[idx + 1]:
                             for selector in stylesheet_copy_copy:
-                                if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', id) + 'Node':
-                                    selector['style']['background-color'] = 'orange'
-                                    selector['style']['shape'] = 'pentagon'
+                                if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', node) + re.sub(r'[^a-zA-Z0-9]','', path[idx + 1]) + 'Edge':
+                                    selector['style']['line-color'] = 'orange'
+                                    selector['style']['target-arrow-color'] = 'orange'
                             for selector in stylesheet_hover:
-                                if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', id) + 'Node':
-                                    selector['style']['background-color'] = 'orange'
-                                    selector['style']['shape'] = 'pentagon'
+                                if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', node) + re.sub(r'[^a-zA-Z0-9]','', path[idx + 1]) + 'Edge':
+                                    selector['style']['line-color'] = 'orange'
+                                    selector['style']['target-arrow-color'] = 'orange'
+                for node1 in node_elements:
+                    if node1['data']['id'] == node:
+                        id = node1['data']['id']
+                        for selector in stylesheet_copy_copy:
+                            if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', id) + 'Node':
+                                selector['style']['background-color'] = 'orange'
+                                selector['style']['shape'] = 'pentagon'
+                        for selector in stylesheet_hover:
+                            if selector['selector'] == '.' + re.sub(r'[^a-zA-Z0-9]', '', id) + 'Node':
+                                selector['style']['background-color'] = 'orange'
+                                selector['style']['shape'] = 'pentagon'
             return stylesheet_copy_copy
         elif button_id ==  'customize-button-state1' and n_clicks1:
             for selector in stylesheet_hover:
