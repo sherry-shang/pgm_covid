@@ -1,7 +1,6 @@
 from app_whole import app
 from Layouts_LongCOVID import SidePanel1, tab11, tab12
-#import navbar1
-import dash_html_components as html
+from dash import html
 from dash.dependencies import Output, Input
 
 #dash.register_page(__name__, path='/', name='page 1') # '/' is home page

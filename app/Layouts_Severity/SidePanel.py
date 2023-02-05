@@ -1,24 +1,26 @@
-import copy
 import json
-import dash
-import plotly
-#import dash_core_components as dcc
 from dash import dcc
-import dash_html_components as html
+from dash import html
 import dash_bootstrap_components as dbc
-import dash_table
-import pandas as pd
 from dash.dependencies import Input, Output, State
 from app_whole import app
 from Layouts_Severity import tab1, tab2
 import pandas as pd
-import math
-import anndata
-#import diffxpy.api as de
-import dash_table as dt
 import numpy as np
 import scipy.stats as ss
+from pgmpy.models import BayesianNetwork
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.inference import VariableElimination
+import networkx as nx
 
+def GenerateSubBayesianNetwork( g, source, target ):
+    edges = set()
+    max_len  = len(tab1.shortest_path1(g, source, target)) - 1
+    all_paths = nx.all_simple_paths(g, source, target, cutoff = max_len)
+    for path in all_paths:
+        for i in range( len( path ) - 1 ):
+            edges.add( ( path[i], path[i+1] ) )
+    return BayesianNetwork( list( edges ) )
 
 G1 = pd.read_pickle("sev_cov_nx.pickle")
 #G1 = pd.read_pickle("C:\\Users\\86186\\Downloads\\sev_cov_nx.pickle")
@@ -73,10 +75,14 @@ node_dropdown11 = dcc.Dropdown(nodes1, placeholder="Select a node",id='node_drop
 node_dropdown21 = dcc.Dropdown(nodes1, placeholder="Select another node",id='node_dropdown2',value='Weight in kg:',optionHeight=80)
 explore_button1 = dbc.Button("Using RNA data",className = "btn border border-2 btn-light", n_clicks=0, id="explore_button",size="sm")
 explore_buttonSoma = dbc.Button("Using Somalogic data",className = "btn border border-2 btn-light", n_clicks=0, id="explore_buttonSoma",size="sm")
-collapse_button11 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button1",n_clicks=0,className = 'btn btn-light')
-collapse_button21 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button2",n_clicks=0,className = 'btn btn-light')
-collapse_button31 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button3",n_clicks=0,className = 'btn btn-light')
-collapse_button41 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button4",n_clicks=0,className = 'btn btn-light')
+#collapse_button11 = dbc.Button(html.I(className="fa-sharp fa-solid fa-xmark"),id="collapse-button1",n_clicks=0,className = 'btn btn-light')
+collapse_button41 = dbc.Button(html.H6('Perform Hypergeometric Test :'),id="collapse-button4",n_clicks=0,color='dark')
+collapse_button11 = dbc.Button(html.H6('Basic Statistics of the network :'),id="collapse-button1",n_clicks=0,color='dark')
+collapse_button21 = dbc.Button(html.H6('Network inferences :'),id="collapse-button2",n_clicks=0,color='dark')
+collapse_button31 = dbc.Button(html.H6('Visualization Customize :'),id="collapse-button3",n_clicks=0,color='dark')
+#collapse_button21 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button2",n_clicks=0,className = 'btn btn-light')
+#collapse_button31 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button3",n_clicks=0,className = 'btn btn-light')
+#collapse_button41 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button4",n_clicks=0,className = 'btn btn-light')
 
 
 
@@ -85,7 +91,8 @@ offcanvas1 = html.Div(
     [
         dbc.Offcanvas(
         html.Div([
-        html.H6(['Basic Statistics :', collapse_button11]),
+        #html.H6(['Basic Statistics :', collapse_button11]),
+        collapse_button11,
         dbc.Collapse(dbc.Container([
         html.Small(['Number of nodes :', html.Small(str(len(G1.nodes)))]),
         dbc.Row([html.Small(['Number of edges :', html.Small(str(len(G1.edges)))])])],
@@ -93,19 +100,21 @@ offcanvas1 = html.Div(
         id="collapse1-1",
         is_open=True,
         ),
-        html.H6(['Inferences :', collapse_button21]),
+        #html.H6(['Inferences :', collapse_button21]),
+        collapse_button21,
         dbc.Collapse(dbc.Container([
         html.Small('Please select your inferences :'),
         multi_dropdown1,
         submit_button1,
         dbc.Row([html.Small(id='my_output1-1',className='mt-4')]),
-        html.Div(id="map")
+        dbc.Modal([dbc.ModalBody(''),dbc.ModalFooter(dbc.Button('Close', id = 'map-close',className='ms-auto',n_clicks=0))],id='map',is_open=False,scrollable=True,size='lg')
         ],
         style={'border-style': 'dotted','border-radius': '5px'}),
         id="collapse2-1",
         is_open=True,
         ),
-        html.H6(['Visualization Customize :', collapse_button31]),
+        #html.H6(['Visualization Customize :', collapse_button31]),
+        collapse_button31,
         #clear_button,
         dbc.Collapse(dbc.Container([
         html.Small(['Customize your network: Please select type of inference, color and shape']),
@@ -113,15 +122,17 @@ offcanvas1 = html.Div(
         color_dropdown11,
         shape_dropdown11,
         customize_button11,
-        dbc.Row([html.Small('Please select your layout :',className='mt-4')]),
+        dbc.Row([html.Small('Please select a layout :',className='mt-4')]),
         layout_dropdown1,
         customize_button21,],
         style={'border-style': 'dotted','border-radius': '5px'}),
         id="collapse3-1",
         is_open=True,
         ),
-        html.H6(['Perform Hypergeometric Test :', collapse_button41]),
+        #html.H6(['Perform Hypergeometric Test :', collapse_button41]),
+        collapse_button41,
         dbc.Collapse(dbc.Container([
+        html.H6(' Please select two nodes. '),
         node_dropdown11,
         node_dropdown21,
         explore_button1,
@@ -132,7 +143,7 @@ offcanvas1 = html.Div(
         id="collapse4-1",
         is_open=True,
         ),
-        dbc.Container([dbc.Button('Contact Us',id="contact-us",n_clicks=0,className = 'btn btn-light',href='https://junding.lab.mcgill.ca/',target="_blank")],style={'border-style': 'groove hidden hidden hidden','margin-top' : '20px'})
+        dbc.Container([dbc.Button('Contact Us',id="contact-us",n_clicks=0,className = 'btn btn-light',href='https://github.com/mcgilldinglab/RAMEN/issues/',target="_blank")],style={'border-style': 'groove hidden hidden hidden','margin-top' : '20px'})
         ]),
 
         id="offcanvas1",
@@ -303,3 +314,91 @@ def toggle_modal(n1, n2, is_open):
         return not is_open
     return is_open
 
+@app.callback(Output("map",'children'),
+              Output('map','is_open'),
+              State('dropdown1','value'),
+              Input('submit-button-state1','n_clicks'),
+              Input("map-close", "n_clicks"),
+              State("map", "is_open")
+              )
+def update_map(dropdown,n1,n2,is_open):
+    #button_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if n1 or n2:
+        var1 = severity
+        var2 = dropdown
+        dt = pd.read_csv('cond_prob_sev.csv')
+        reference = pd.read_pickle("sev_discrete_to_real_new.pickle")
+        var1_lst = list(set(dt[var2].tolist()))
+        while -999 in var1_lst:
+            var1_lst.remove(-999)
+        var1_lst.sort()
+
+        model = GenerateSubBayesianNetwork(G1, var2, var1)
+        nodes = list(model.nodes)
+        cpd_lst = []
+        if nodes == []:
+            return [dbc.ModalBody("The network doesn't has the path from the node to Severity."),
+                              dbc.ModalFooter(
+                                       dbc.Button('Close', id = 'map-close',className='ms-auto',n_clicks=0)
+                                   )], not is_open
+        for node in nodes:
+            cpd_lst.append(MaximumLikelihoodEstimator(model, dt).estimate_cpd(node))
+        for cpd in cpd_lst:
+            model.add_cpds(cpd)
+
+        infer_non_adjust = VariableElimination(model)
+        if var1_lst[0] == 0:
+            naming = var1_lst
+        else:
+            naming = [i - 1 for i in var1_lst]
+        '''
+        row_lst = []
+        row_lst.append(html.Tr([html.Td(''), html.Td('Severity: 0'), html.Td('Severity: 1'), html.Td('Severity: 2')]))
+        if var1_lst[0] == 0:
+            naming = var1_lst
+        else:
+            naming = [i - 1 for i in var1_lst]
+        for i in range(len(var1_lst)):
+            print(naming)
+            temp_lst = infer_non_adjust.query(variables=[var1], evidence={var2: var1_lst[i]}).values
+            temp_lst = list(map(str, temp_lst))
+            temp = []
+            temp.append(html.Td(var2 + str(reference[var2][naming[i]])))
+            temp.append(html.Td(x for x in temp_lst))
+            row_lst.append(html.Tr(temp))
+        '''
+        dict1 = {}
+        sub_naming = [reference[var2][naming[i]] for i in range(len(var1_lst))]
+        if type(sub_naming[0]) == tuple:
+            for i in range(len(sub_naming)):
+                sub_naming[i] = str(tuple(round(float(x),2) for x in sub_naming[i]))
+        dict1[''] = [var2 + " " + x for x in sub_naming]
+        dict1['Severity: Mild'] = []
+        dict1['Severity: Moderate'] = []
+        dict1['Severity:Severe'] = []
+        for i in var1_lst:
+            lst = list(map(str,[round(float(i),2) for i in infer_non_adjust.query(variables=[var1], evidence={var2: i}).values]))
+            dict1['Severity: Moderate'].append(lst[0])
+            dict1['Severity: Mild'].append(lst[2])
+            dict1['Severity:Severe'].append(lst[1])
+        #dict1['Severity:0'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 0}).values]))
+        #dict1['Severity:1'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 1}).values]))
+        #dict1['Severity:2'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 2}).values]))
+
+        return [[dbc.ModalBody(dbc.Table.from_dataframe(pd.DataFrame(dict1))),
+                              dbc.ModalFooter(
+                                       dbc.Button('Close', id = 'map-close',className='ms-auto',n_clicks=0)
+                                   )], not is_open]
+    return [[dbc.ModalBody(''),dbc.ModalFooter(dbc.Button('Close', id = 'map-close',className='ms-auto',n_clicks=0))], is_open]
+
+'''
+@app.callback(
+    Output("map", "is_open"),
+    [Input('submit-button-state1', "n_clicks"), Input("map-close", "n_clicks")],
+    [State("map", "is_open")],
+)
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
+'''

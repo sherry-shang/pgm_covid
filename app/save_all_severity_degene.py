@@ -99,9 +99,12 @@ for node in degene_lst:
         var1 = var1.replace('/',' or ')
     # f.savefig('sev_age.png')
     if '?' in var1:
-        f.savefig('assets/' + 'a' + var1.replace('?', '') + '_' + 'Severity' + '.pdf', bbox_inches='tight')
+        f.savefig('assets1/' + 'a' + var1.replace('?', '') + '_' + 'Severity' + '.jpg', bbox_inches='tight',dpi=600)
+        plt.close(f)
     # f.savefig(var1.replace('?','')+'_'+var2+'.pdf',bbox_inches = 'tight')
     elif ':' in var1:
-        f.savefig('assets/' + 'a' + var1.replace(':',' ') + '_' + 'Severity' + '.pdf', bbox_inches='tight')
+        f.savefig('assets1/' + 'a' + var1.replace(':',' ') + '_' + 'Severity' + '.jpg', bbox_inches='tight',dpi=600)
+        plt.close(f)
     else:
-        f.savefig('assets/' + 'a' + var1 + '_' + 'Severity' + '.pdf', bbox_inches='tight')
+        f.savefig('assets1/' + 'a' + var1 + '_' + 'Severity' + '.jpg', bbox_inches='tight',dpi=600)
+        plt.close(f)

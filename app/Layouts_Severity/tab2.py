@@ -1,20 +1,13 @@
-import dash  # pip install dash
-import networkx as nx
-import dash_cytoscape as cyto  # pip install dash-cytoscape==0.2.0 or higher
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
+from dash import dcc
 from dash.dependencies import Output, Input, State
-import copy
-import random
-import dash_bootstrap_components as dbc
 import pandas as pd  # pip install pandas
 import plotly.express as px
 import math
 from app_whole import app
-import re
 import pandas
-import plotly.graph_objects as go
 import json
+from skimage import io
 
 with open('sev_app_degene.json') as jf:
     degene_json = json.load(jf)
@@ -39,20 +32,22 @@ node_dropdown2 = dcc.Dropdown(nodes,value='Weight in kg:',id='node2')
 degene_dropdown = dcc.Dropdown(degene_lst, value= 'BMI:',id='degene_node2')
 
 layout = html.Div([
-        html.H6('Please select two nodes:', style={'textAlign': "Left"}),
+        html.H4('Please select two nodes:', style={'textAlign': "Left"}),
           node_dropdown1
         , node_dropdown2
         ,html.H6(id='my_function1')
      , html.Div([dcc.Graph(id="ru-my-heatmap1"
                             , style={"margin-right": "auto", "margin-left": "auto", "width": "80%", "height":"600px"})]
         ),
-        html.H6('Please select one node:', style={'textAlign': "Left"}),
+        html.H4('Please select one node:', style={'textAlign': "Left"}),
      degene_dropdown,
         html.H6('Here are the genes with the highest fold changes in each group:', style={'textAlign': "Left"}),
-     html.Div([html.ObjectEl(id = 'degene_heatmap1',type='application/pdf',width='1000',height='1000')],style={ 'text-align':'center'})
+        html.H6('Validating the network using COVID multi-omic data.', style={'textAlign': "Left"}),
+     #html.Div([html.ObjectEl(id = 'degene_heatmap1',type='application/pdf',width='1000',height='1000')],style={ 'text-align':'center'})
+     html.Div(dcc.Graph(id='degene_heatmap1', style={"margin-right": "auto", "margin-left": "auto", "width": "80%", "height":"1600px"}))
     ])
 
-@app.callback(Output('degene_heatmap1','data'),
+@app.callback(Output('degene_heatmap1','figure'),
               [Input('degene_node2','value')
               ])
 def update_degene(node):
@@ -62,12 +57,18 @@ def update_degene(node):
         var1 = var1.replace('/', ' or ')
     # f.savefig('sev_age.png')
     if '?' in var1:
-        return('assets/' + 'a' + var1.replace('?', '') + '_' + 'Severity' + '.pdf')
+        img = io.imread('assets/' + 'a' + var1.replace('?', '') + '_' + 'Severity' + '.jpg')
     # f.savefig(var1.replace('?','')+'_'+var2+'.pdf',bbox_inches = 'tight')
     elif ':' in var1:
-        return('assets/' + 'a' + var1.replace(':', ' ') + '_' + 'Severity' + '.pdf')
+        img = io.imread('assets/' + 'a' + var1.replace(':', ' ') + '_' + 'Severity' + '.jpg')
     else:
-        return('assets/' + 'a' + var1 + '_' + 'Severity' + '.pdf')
+        img = io.imread('assets/' + 'a' + var1 + '_' + 'Severity' + '.jpg')
+    fig = px.imshow(img)
+    fig.update_layout(coloraxis_showscale=False)
+    fig.update_xaxes(showticklabels=False)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(hoverinfo='none',hovertemplate=None)
+    return fig
 
 @app.callback(Output('ru-my-heatmap1','figure'),
               [Input('node1','value'),
@@ -129,7 +130,7 @@ def update_figure(node11,node22):
         lst = []
         for num1 in first_node_col:
             csv1 = csv[(csv[node11] == num1) & (csv[node22] == num2)]
-            lst.append(round(csv1.shape[0]/total_num,2))
+            lst.append(round(csv1.shape[0]/total_num,4))
         z_value.append(lst)
     reference = pd.read_pickle('sev_discrete_to_real_new.pickle')
     x_reference_whole = reference[node11]
@@ -157,8 +158,18 @@ def update_figure(node11,node22):
         for i in y_reference_whole:
             if i in y_naming:
                 y_reference.append(y_reference_whole[i])
-    x_reference = list(map(str,x_reference))
-    y_reference = list(map(str,y_reference))
+    #print(type(x_reference))
+    #print(x_reference)
+    #print(type(y_reference))
+    #print(y_reference)
+    if type(x_reference[0]) == tuple:
+        for i in range(len(x_reference)):
+            x_reference[i] = str(tuple(round(float(x),2) for x in x_reference[i]))
+    if type(y_reference[0]) == tuple:
+        for i in range(len(y_reference)):
+            y_reference[i] = str(tuple(round(float(x),2) for x in y_reference[i]))
+    #x_reference = list(map(str,x_reference))
+    #y_reference = list(map(str,y_reference))
     '''      
     if len(first_node_col) == 2:
         if len(second_node_col) == 2:

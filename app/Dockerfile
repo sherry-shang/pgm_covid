@@ -15,7 +15,7 @@ RUN pip install anndata
 RUN pip install pgmpy
 RUN pip install matplotlib
 RUN pip install seaborn
-
+RUN pip install scikit-image
 
 RUN mkdir /home/app/
 COPY . /home/app/

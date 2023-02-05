@@ -1,7 +1,6 @@
 from app_whole import app
 from Layouts_Severity import SidePanel, tab1, tab2
-#import navbar
-import dash_html_components as html
+from dash import html
 from dash.dependencies import Output, Input
 
 #dash.register_page(__name__, name='page 2')

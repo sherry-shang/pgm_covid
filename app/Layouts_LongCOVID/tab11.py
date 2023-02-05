@@ -1,28 +1,16 @@
 import dash  # pip install dash
 import networkx as nx
 import dash_cytoscape as cyto  # pip install dash-cytoscape==0.2.0 or higher
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
 from dash.dependencies import Output, Input, State
 import copy
-import random
 import dash_bootstrap_components as dbc
 import pandas as pd  # pip install pandas
-import plotly.express as px
-import math
 from app_whole import app
 import re
-from pgmpy.models import BayesianNetwork
-from pgmpy.estimators import MaximumLikelihoodEstimator
-from pgmpy.inference import VariableElimination
 
-def GenerateSubBayesianNetwork( g, source, target ):
-    edges = set()
-    all_paths = nx.all_simple_paths( g, source, target )
-    for path in all_paths:
-        for i in range( len( path ) - 1 ):
-            edges.add( ( path[i], path[i+1] ) )
-    return BayesianNetwork( list( edges ) )
+
+
 
 cyto.load_extra_layouts()
 '''
@@ -853,59 +841,6 @@ graph = cyto.Cytoscape(
 layout = html.Div([canvas_button,graph])
 
 
-@app.callback(Output("map1",'children'),
-              State('dropdown','value'),
-              Input('submit-button-state','n_clicks')
-              )
-def update_map(dropdown,n_clicks):
-    #button_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
-    if n_clicks:
-        var1 = 'Long Covid'
-        var2 = dropdown
-        dt = pd.read_csv('cond_prob_long.csv')
-        reference = pd.read_pickle("long_discrete_to_real(1).pickle")
-        var1_lst = list(set(dt[var2].tolist()))
-        while -999 in var1_lst:
-            var1_lst.remove(-999)
-        var1_lst.sort()
-
-        model = GenerateSubBayesianNetwork(G, var2, var1)
-        nodes = list(model.nodes)
-        cpd_lst = []
-        if nodes == []:
-            return html.Div()
-        for node in nodes:
-            cpd_lst.append(MaximumLikelihoodEstimator(model, dt).estimate_cpd(node))
-        for cpd in cpd_lst:
-            model.add_cpds(cpd)
-
-        infer_non_adjust = VariableElimination(model)
-        if var1_lst[0] == 0:
-            naming = var1_lst
-        else:
-            naming = [i - 1 for i in var1_lst]
-        '''
-        row_lst = []
-        row_lst.append(html.Tr([html.Td(''), html.Td('Severity: 0'), html.Td('Severity: 1'), html.Td('Severity: 2')]))
-        if var1_lst[0] == 0:
-            naming = var1_lst
-        else:
-            naming = [i - 1 for i in var1_lst]
-        for i in range(len(var1_lst)):
-            print(naming)
-            temp_lst = infer_non_adjust.query(variables=[var1], evidence={var2: var1_lst[i]}).values
-            temp_lst = list(map(str, temp_lst))
-            temp = []
-            temp.append(html.Td(var2 + str(reference[var2][naming[i]])))
-            temp.append(html.Td(x for x in temp_lst))
-            row_lst.append(html.Tr(temp))
-        '''
-        dict1 = {}
-        dict1[''] = [var2 + str(reference[var2][naming[i]]) for i in range(len(var1_lst))]
-        dict1['Non Long COVID'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 0}).values]))
-        dict1['Long COVID'] = list(map(str,[float('{:.2f}'.format(i)) for i in infer_non_adjust.query(variables=[var2], evidence={var1: 1}).values]))
-
-        return html.Div([dbc.Table.from_dataframe(pd.DataFrame(dict1))])
 
 stylesheet_copy = copy.deepcopy(stylesheet1)
 stylesheet_hover = copy.deepcopy(stylesheet1)

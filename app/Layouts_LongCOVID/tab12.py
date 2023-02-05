@@ -1,25 +1,13 @@
-import dash  # pip install dash
-import networkx as nx
-import dash_cytoscape as cyto  # pip install dash-cytoscape==0.2.0 or higher
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
+from dash import dcc
 from dash.dependencies import Output, Input, State
-import copy
-import random
-import dash_bootstrap_components as dbc
 import pandas as pd  # pip install pandas
 import plotly.express as px
 import math
 from app_whole import app
-import re
 import pandas
-import plotly.graph_objects as go
-from plotly.tools import mpl_to_plotly
-from matplotlib import pyplot as plt
-import numpy as np
-import seaborn as sns
-import matplotlib
 import json
+from skimage import io
 
 with open('long_app_degene.json') as jf:
     degene_json = json.load(jf)
@@ -49,24 +37,25 @@ degene_dropdown = dcc.Dropdown(degene_lst, value= 'Sex at birth:',id='degene_nod
 #    pdf_data = base64.b64encode(pdf.read()).decode('utf-8')
 
 layout = html.Div([
-        html.H6([html.H3("Please select two nodes:")], style={'textAlign': "Left"}),
+        html.H6([html.H4("Please select two nodes:")], style={'textAlign': "Left"}),
           node_dropdown1
         , node_dropdown2
         ,html.H6(id='my_function')
      ,   html.Div([dcc.Graph(id="ru-my-heatmap"
                             , style={"margin-right": "auto", "margin-left": "auto", "width": "80%", "height":"600px"})]
         ),
-        html.H6([html.H3("Please select one node:")], style={'textAlign': "Left"}),
+        html.H6([html.H4("Please select one node:")], style={'textAlign': "Left"}),
         degene_dropdown,
-        html.H6([html.H3("Here are the genes with the highest fold changes in each group.")], style={'textAlign': "Left"}),
-        html.Div([html.ObjectEl(id = 'degene_heatmap',type='application/pdf',width='1000',height='1000')],style={ 'text-align':'center'})
+        html.H6([html.H6("Here are the genes with the highest fold changes in each group.")], style={'textAlign': "Left"}),
+        html.H6([html.H6('Validating the network using COVID multi-omic data.')], style={'textAlign': "Left"}),
+        html.Div([dcc.Graph(id = 'degene_heatmap',style={"margin-right": "auto", "margin-left": "auto", "width": "80%", "height":"1600px"})])
 
     ])
 
 
 
 
-@app.callback(Output('degene_heatmap','data'),
+@app.callback(Output('degene_heatmap','figure'),
               [Input('degene_node1','value')
               ])
 def update_degene(node):
@@ -76,12 +65,18 @@ def update_degene(node):
         var1 = var1.replace('/',' or ')
     # f.savefig('sev_age.png')
     if '?' in var1:
-        return('assets/' + var1.replace('?', '') + '_' + var2 + '.pdf')
+        img = io.imread('assets/' + var1.replace('?', '') + '_' + var2 + '.jpg')
     # f.savefig(var1.replace('?','')+'_'+var2+'.pdf',bbox_inches = 'tight')
     elif ':' in var1:
-        return('assets/' + var1.replace(':',' ') + '_' + var2 + '.pdf')
+        img = io.imread('assets/' + var1.replace(':',' ') + '_' + var2 + '.jpg')
     else:
-        return('assets/' + var1 + '_' + var2 + '.pdf')
+        img = io.imread('assets/' + var1 + '_' + var2 + '.jpg')
+    fig = px.imshow(img)
+    fig.update_layout(coloraxis_showscale=False)
+    fig.update_xaxes(showticklabels=False)
+    fig.update_yaxes(showticklabels=False)
+    fig.update_traces(hoverinfo='none', hovertemplate=None)
+    return fig
 
 
 @app.callback(Output('ru-my-heatmap','figure'),
@@ -139,7 +134,7 @@ def update_figure(node11,node22):
         lst = []
         for num1 in first_node_col:
             csv1 = csv[(csv[node11] == num1) & (csv[node22] == num2)]
-            lst.append(round(csv1.shape[0]/total_num,2))
+            lst.append(round(csv1.shape[0]/total_num,4))
         z_value.append(lst)
     reference = pd.read_pickle("long_discrete_to_real(1).pickle")
     x_reference_whole = reference[node11]
@@ -167,8 +162,14 @@ def update_figure(node11,node22):
         for i in y_reference_whole:
             if i in y_naming:
                 y_reference.append(y_reference_whole[i])
-    x_reference = list(map(str, x_reference))
-    y_reference = list(map(str, y_reference))
+    if type(x_reference[0]) == tuple:
+        for i in range(len(x_reference)):
+            x_reference[i] = str(tuple(round(float(x),2) for x in x_reference[i]))
+    if type(y_reference[0]) == tuple:
+        for i in range(len(y_reference)):
+            y_reference[i] = str(tuple(round(float(x),2) for x in y_reference[i]))
+    #x_reference = list(map(str, x_reference))
+    #y_reference = list(map(str, y_reference))
     fig = px.imshow(z_value, color_continuous_scale=px.colors.sequential.YlOrBr, text_auto=True, aspect="auto",
                     x=x_reference, y=y_reference, labels=dict(x=label_x, y=label_y))
     fig.update_layout(title_font={'size': 27}, title_x=0.5)
