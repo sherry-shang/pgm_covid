@@ -866,6 +866,8 @@ def update_stylesheet(n_clicks,n_clicks1,hover,type1,color1,shape1,dropdown):
                         if selector1['selector'] == selector['selector']:
                             selector['style']['background-color'] = selector1['style']['background-color']
                             selector['style']['shape'] = selector1['style']['shape']
+            if dropdown == 'severity':
+                dropdown = severity
             path = shortest_path(graph_path, str(dropdown), 'Long Covid')
             for idx, node in enumerate(path):
                 if idx < len(path) - 1:

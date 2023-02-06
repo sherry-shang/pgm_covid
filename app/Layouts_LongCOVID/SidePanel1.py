@@ -62,7 +62,7 @@ explore_buttonSoma1 = dbc.Button("Using Somalogic data",className = "btn border 
 #collapse_button2 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button2",n_clicks=0,className = 'btn btn-light')
 #collapse_button3 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button3",n_clicks=0,className = 'btn btn-light')
 #collapse_button4 = dbc.Button(html.I(className="bi bi-bookmark-star"),id="collapse-button4",n_clicks=0,className = 'btn btn-light')
-collapse_button4 = dbc.Button(html.H6('Perform Hypergeometric Test :'),id="collapse-button4",n_clicks=0,color='dark')
+collapse_button4 = dbc.Button(html.H6('Validation using COVID multi-omics data :'),id="collapse-button4",n_clicks=0,color='dark')
 collapse_button1 = dbc.Button(html.H6('Basic Statistics of the network :'),id="collapse-button1",n_clicks=0,color='dark')
 collapse_button2 = dbc.Button(html.H6('Network inferences :'),id="collapse-button2",n_clicks=0,color='dark')
 collapse_button3 = dbc.Button(html.H6('Visualization Customize :'),id="collapse-button3",n_clicks=0,color='dark')
@@ -115,12 +115,14 @@ offcanvas = html.Div(
         #html.H6(['Perform Gene Test : Please select two nodes. ', collapse_button4]),
         collapse_button4,
         dbc.Collapse(dbc.Container([
-        node_dropdown1,
-        node_dropdown2,
-        explore_button,
-        explore_buttonSoma1,
-        dbc.Row([html.Small(id='my_output1',className='mt-4')]),
-        dbc.Row([html.Small(id='my_outputSoma1',className='mt-4')])],
+        html.H6('For Long COVID network, we hide this function due to lack of samples.')
+        #node_dropdown1,
+        #node_dropdown2,
+        #explore_button,
+        #explore_buttonSoma1,
+        #dbc.Row([html.Small(id='my_output1',className='mt-4')]),
+        #dbc.Row([html.Small(id='my_outputSoma1',className='mt-4')])
+        ],
         style={'border-style': 'dotted','border-radius': '5px'}),
         id="collapse4",
         is_open=True,
@@ -169,6 +171,8 @@ def update_map(dropdown,n1,n2,is_open):
     if n1 or n2:
         var1 = 'Long Covid'
         var2 = dropdown
+        if var2 == 'severity':
+            var2 = severity
         dt = pd.read_csv('cond_prob_long.csv')
         reference = pd.read_pickle("long_discrete_to_real(1).pickle")
         var1_lst = list(set(dt[var2].tolist()))

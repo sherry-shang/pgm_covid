@@ -76,7 +76,7 @@ node_dropdown21 = dcc.Dropdown(nodes1, placeholder="Select another node",id='nod
 explore_button1 = dbc.Button("Using RNA data",className = "btn border border-2 btn-light", n_clicks=0, id="explore_button",size="sm")
 explore_buttonSoma = dbc.Button("Using Somalogic data",className = "btn border border-2 btn-light", n_clicks=0, id="explore_buttonSoma",size="sm")
 #collapse_button11 = dbc.Button(html.I(className="fa-sharp fa-solid fa-xmark"),id="collapse-button1",n_clicks=0,className = 'btn btn-light')
-collapse_button41 = dbc.Button(html.H6('Perform Hypergeometric Test :'),id="collapse-button4",n_clicks=0,color='dark')
+collapse_button41 = dbc.Button(html.H6('Validation using COVID multi-omics data:'),id="collapse-button4",n_clicks=0,color='dark')
 collapse_button11 = dbc.Button(html.H6('Basic Statistics of the network :'),id="collapse-button1",n_clicks=0,color='dark')
 collapse_button21 = dbc.Button(html.H6('Network inferences :'),id="collapse-button2",n_clicks=0,color='dark')
 collapse_button31 = dbc.Button(html.H6('Visualization Customize :'),id="collapse-button3",n_clicks=0,color='dark')

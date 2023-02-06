@@ -42,7 +42,7 @@ layout = html.Div([
         html.H4('Please select one node:', style={'textAlign': "Left"}),
      degene_dropdown,
         html.H6('Here are the genes with the highest fold changes in each group:', style={'textAlign': "Left"}),
-        html.H6('Validating the network using COVID multi-omic data.', style={'textAlign': "Left"}),
+        html.H6('Validating the network using COVID multi-omic RNA data.', style={'textAlign': "Left"}),
      #html.Div([html.ObjectEl(id = 'degene_heatmap1',type='application/pdf',width='1000',height='1000')],style={ 'text-align':'center'})
      html.Div(dcc.Graph(id='degene_heatmap1', style={"margin-right": "auto", "margin-left": "auto", "width": "80%", "height":"1600px"}))
     ])
